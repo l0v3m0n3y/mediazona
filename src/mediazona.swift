@@ -61,7 +61,7 @@ public class Mediazona{
         return try JSONSerialization.jsonObject(with: data)
     }
     
-    public func search(q: String,limit: Int? = 12,page: Int? = 0,sort: String = "sort") async throws -> Any {
+    public func search(q: String,limit: Int = 12,page: Int = 0,sort: String = "sort") async throws -> Any {
         var components = URLComponents(string: "\(api)/search")
         var queryItems = [
         URLQueryItem(name: "q", value: q),
