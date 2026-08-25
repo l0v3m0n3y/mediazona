@@ -21,9 +21,9 @@ extension URLSession {
 }
 
 public class Mediazona{
-    private let api_shares = "https://zona.media/_shares"
+    private let apiShares = "https://zona.media/_shares"
     private let api = "https://zona.media/api"
-    private let api_r200 = "https://s3.zona.media"
+    private let apiR200 = "https://s3.zona.media"
     private var headers: [String: String]
     
     public init() {
@@ -37,46 +37,40 @@ public class Mediazona{
 
     }
     
-    public func get_shares(url: String) async throws -> Any {
-        let urlString = "\(api)?url=\(url)"
-        guard let url = URL(string: urlString) else {
+    private func fetchJSON(from urlString: String,method: HTTPMethod = .get,body: Data? = nil,queryParameters: [String: String]? = nil) async throws -> Any {
+        var urlComponents = URLComponents(string: urlString)
+        if let queryParameters = queryParameters {
+            urlComponents?.queryItems = queryParameters.map { URLQueryItem(name: $0.key, value: $0.value) }
+        }
+        guard let url = urlComponents?.url else {
             throw NSError(domain: "Invalid URL", code: -1)
         }
         var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        request.httpMethod = method.rawValue
         request.allHTTPHeaderFields = headers
-        let (data, _) = try await URLSession.shared.data(for: request)
-        return try JSONSerialization.jsonObject(with: data)
-    }
-
-    public func get_infographics() async throws -> Any {
-        let urlString = "\(api_r200)/infographics/g200w/urls.json.gz?cachebuster=cae8add5"
-        guard let url = URL(string: urlString) else {
-            throw NSError(domain: "Invalid URL", code: -1)
+        if let body = body {
+            request.httpBody = body
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.allHTTPHeaderFields = headers
         let (data, _) = try await URLSession.shared.data(for: request)
         return try JSONSerialization.jsonObject(with: data)
     }
     
+    public func getShares(url: String) async throws -> Any {
+        return try await fetchJSON(from: "\(api)?url=\(url)")
+    }
+
+    public func getInfographics() async throws -> Any {
+        return try await fetchJSON(from: "\(apiR200)/infographics/g200w/urls.json.gz?cachebuster=cae8add5")
+    }
+    
     public func search(q: String,limit: Int = 12,page: Int = 0,sort: String = "sort") async throws -> Any {
-        var components = URLComponents(string: "\(api)/search")
         var queryItems = [
-        URLQueryItem(name: "q", value: q),
-        URLQueryItem(name: "size", value: String(limit)),
-        URLQueryItem(name: "page", value: String(page)),
-        URLQueryItem(name: "sort", value: sort)
+        "q": q,
+        "size": String(limit),
+        "page": String(page),
+        "sort": sort
         ]
-        components?.queryItems = queryItems
-        guard let url = components?.url else {
-            throw URLError(.badURL)
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.allHTTPHeaderFields = headers
-        let (data, _) = try await URLSession.shared.data(for: request)
-        return try JSONSerialization.jsonObject(with: data)
+        return try await fetchJSON(from: "\(api)/search",queryParameters: queryParameters.isEmpty ? nil : queryParameters)
     }
 }
