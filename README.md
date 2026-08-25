@@ -7,7 +7,7 @@ import mediazona
 let client = Mediazona()
 
 do {
-    let content = try await client.get_infographics()
+    let content = try await client.getInfographics()
     print(content)
 } catch {
     print("Error: \(error)")
